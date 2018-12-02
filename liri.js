@@ -6,6 +6,7 @@ moment().format();
 var Spotify = require("node-spotify-api");
 var keys = require("./keys")
 var spotify = new Spotify(keys.spotify)
+var keyword = ["search", "look", "find"];
 
 function breakdown(arg) {
     var searchArr;
@@ -20,7 +21,7 @@ function breakdown(arg) {
         return searchArr;
     };
 }
-function whattype(arg){
+function whattype(arg) {
     inquirer
         .prompt([
             {
@@ -35,12 +36,28 @@ function whattype(arg){
                 default: true,
                 name: "confirm"
             }
-        ]).then(function(resp){
-            if(resp.confirm){
-                if(resp.choice == "movie"){
-                    omdbSearch(arg);
+        ]).then(function (resp) {
+            function respSwitch(arg1, arg2) {
+                if (arg1 == "Movie") {
+                    omdbSearch(arg2);
                 } else {
-                    spotSearch(resp.choice.toLowerCase(), arg)
+                    spotSearch(arg1.toLowerCase(), arg2)
+                }
+            }
+            if (resp.confirm) {
+                if (keyword.indexOf(arg) !== -1) {
+                    inquirer
+                        .prompt([
+                            {
+                                type: "input",
+                                message: `What is the name of the ${resp.choice}?`,
+                                name: "name"
+                            }
+                        ]).then(function (nestresp) {
+                            respSwitch(resp.choice, nestresp.name);
+                        })
+                } else {
+                    respSwitch(resp.choice, arg)
                 }
             } else {
                 whattype(arg);
@@ -49,23 +66,44 @@ function whattype(arg){
 }
 
 function decide(arg) {
-    var keyword = ["search", "look", "find"];
-    var input;
-    for (let i = 0; i < arg.length; i++) {
-        for (let j = 0; j < keyword.length; j++) {
-            if (arg[i] == keyword[j]) {
-                if (arg[i + 1] == "up" || arg[i + 1] == "for") {
-                    input = arg.slice(i + 2).join("+");
-                    whattype(input);
-                } else {
-                    input = arg.slice(i + 1).join("+");
-                    whattype(input);
-                }
+    
+    if(keyword.indexOf(arg) !== -1 && arg.length == 1){
+        whattype(arg);
+    } else if (keyword.indexOf(arg) !== -1) {
+        for (let i = 0; i < arg.length; i++) {
+            for (let j = 0; j < keyword.length; j++) {
+                if (arg[i] == keyword[j]) {
+                    if (arg[i + 1] == "up" || arg[i + 1] == "for") {
+                        input = arg.slice(i + 2).join("+");
+                        whattype(input);
+                    } else {
+                        input = arg.slice(i + 1).join("+");
+                        whattype(input);
+                    }
+                } 
             }
         }
+    } else {
+        whattype(arg.join(" "))
     }
 };
-
+function showtimes(arg){
+    inquirer
+                    .prompt([
+                        {
+                            type: "confirm",
+                            message: "Would you like to look up showtimes?",
+                            default: true,
+                            name: "confirm"
+                        }
+                    ]).then(function (resp) {
+                        if (resp.confirm) {
+                            BITSearch(arg);
+                        } else {
+                            anythingElse();
+                        }
+                    })
+}
 
 function spotSearch(arg1, arg2) {
     spotify
@@ -73,41 +111,37 @@ function spotSearch(arg1, arg2) {
         .then(function (response) {
             var searchInfo = response[`${arg1}s`].items[0];
             if (arg1 == "track") {
-                console.log(`Track: ${searchInfo.name}`);
-                console.log(`Album: ${searchInfo.album.name}`);
-                console.log(`Artist: ${searchInfo.artists[0].name}`);
-                console.log(`Release Date: ${searchInfo.album.release_date}`);
+                let trackInfo = [
+                    `Track: ${searchInfo.name}`,
+                    `Album: ${searchInfo.album.name}`,
+                    `Artist: ${searchInfo.artists[0].name}`,
+                    `Release Date: ${searchInfo.album.release_date}`
+                ].join("\n");
+                console.log(trackInfo);
+                showtimes(searchInfo.artists[0].name)
             } else if (arg1 == "album") {
-                console.log(`Album: ${searchInfo.name}`);
-                console.log(`Artist: ${searchInfo.artists[0].name}`);
-                console.log(`Release Date: ${searchInfo.release_date}`);
+                let albumInfo = [
+                    `Album: ${searchInfo.name}`,
+                    `Artist: ${searchInfo.artists[0].name}`,
+                    `Release Date: ${searchInfo.release_date}`
+                ].join("\n")
+                console.log(albumInfo);
+                showtimes(searchInfo.artists[0].name);
             } else if (arg1 == "artist") {
-                console.log(`Artist: ${searchInfo.name}`);
-                console.log(`Popularity: ${searchInfo.popularity}%`);
-                console.log(`Followers: ${numberWithCommas(searchInfo.followers.total)}`);
-                console.log("Genres: ")
-                // for (var i = 0; i < searchInfo.genres; i++) {
-                console.log(searchInfo.genres.join(", "));
-                // }
+                let artistInfo = [
+                    `Artist: ${searchInfo.name}`,
+                    `Popularity: ${searchInfo.popularity}%`,
+                    `Followers: ${numberWithCommas(searchInfo.followers.total)}`,
+                    "Genres: ",
+                    searchInfo.genres.join(", ")
+                ].join("\n")
+                console.log(artistInfo);
+                showtimes(searchInfo.name)
             } else if (arg1 == "playlist") {
                 console.log(`Playlist: ${searchInfo.name}`);
                 console.log(searchInfo.tracks.href)
+                anythingElse();
             }
-            inquirer
-            .prompt([
-                {
-                    type: "confirm",
-                    message: "Would you like to look up showtimes?",
-                    default: true,
-                    name: "confirm"
-                }
-            ]).then(function(resp){
-                if(resp.confirm){
-                    BITSearch(arg2);
-                } else {
-                    anythingElse();
-                }
-            })
         })
         .catch(function (err) {
             console.log(err);
@@ -119,39 +153,39 @@ function compare(arr1, arr2) {
     return found;
 };
 
-function omdbSearch (arg){
+function omdbSearch(arg) {
     let refArg = arg.split(" ").join("+");
     let query = "http://www.omdbapi.com/?apikey=trilogy&t=" + refArg;
-    request.get({url: query}, function (error, response, body){
-            if (!error && response.statusCode == 200) {
-                let data = JSON.parse(body);
-                console.log('Title:', data.Title);
-                console.log('Year:', data.Year);
-                console.log('Rated:', data.Rated)
-                console.log('IMDB Rating:', data.imdbRating);
-                if (data.Ratings[1]){
-                    console.log('Rotten Tomatoes:', data.Ratings[1].Value);
-                } else {
-                    console.log('Rotten Tomatoes:', "N/A")
-                }
-                console.log('Country:', data.Country);
-                console.log('Language:', data.Language);
-                console.log('Plot:', "\n" + data.Plot);
-                console.log('Actors:', "\n" + data.Actors);
+    request.get({ url: query }, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            let data = JSON.parse(body);
+            console.log('Title:', data.Title);
+            console.log('Year:', data.Year);
+            console.log('Rated:', data.Rated)
+            console.log('IMDB Rating:', data.imdbRating);
+            if (data.Ratings[1]) {
+                console.log('Rotten Tomatoes:', data.Ratings[1].Value);
             } else {
-                console.log('error', error, response && response.statusCode);
+                console.log('Rotten Tomatoes:', "N/A")
             }
-            anythingElse();
+            console.log('Country:', data.Country);
+            console.log('Language:', data.Language);
+            console.log('Plot:', "\n" + data.Plot);
+            console.log('Actors:', "\n" + data.Actors);
+        } else {
+            console.log('error', error, response && response.statusCode);
+        }
+        anythingElse();
     })
 }
 
-function BITSearch  (arg){
+function BITSearch(arg) {
     let query = "https://rest.bandsintown.com/artists/" + arg + "/events?app_id=codingbootcamp";
-    request.get({url: query}, function (error, response, body){
+    request.get({ url: query }, function (error, response, body) {
         var BITJson = JSON.parse(body);
-        for(var s = 0; s< BITJson.length; s++){
+        for (var s = 0; s < BITJson.length; s++) {
             let data = BITJson[s];
-            if(data.venue.country == "United States"){
+            if (data.venue.country == "United States") {
                 var logs = [
                     "Country: " + data.venue.country,
                     "Location: " + data.venue.city + ", " + data.venue.region,
@@ -166,8 +200,8 @@ function BITSearch  (arg){
         anythingElse();
 
     })
-        
- 
+
+
 }
 
 function lookFor(arg) {
@@ -175,12 +209,12 @@ function lookFor(arg) {
     var lastWord = arg.slice(-1).toString();
     if (compare(searchType, arg)) {
         let indexLast = searchType.indexOf(lastWord);
-        
+
         for (var i = 0; i < arg.length; i++) {
             let indexArg = searchType.indexOf(arg[i]);
             if (indexArg !== -1) {
                 var query = arg.slice(i + 1, arg.length).join(" ");
-                if (query == ""){
+                if (query == "") {
                     if (indexLast >= searchType.length - 7) {
                         console.log("Have a nice day!");
                     } else {
@@ -190,27 +224,27 @@ function lookFor(arg) {
                             name: "input"
                         }).then(function (resp) {
                             input = resp.input;
-            
+
                             if (indexLast <= 5) {
                                 spotSearch(searchThis(lastWord), input)
-                            } else if (indexLast >= 6 && indexLast <= 7){
+                            } else if (indexLast >= 6 && indexLast <= 7) {
                                 omdbSearch(input);
-                            } else if (indexArg >= 8 && indexArg <= 10){
+                            } else if (indexArg >= 8 && indexArg <= 10) {
                                 BITSearch(input);
                             }
                             return input;
                         })
                     }
-                } else if (indexArg <= 5){
+                } else if (indexArg <= 5) {
                     spotSearch(searchThis(arg[i]), query);
-                } else if (indexArg >= 6 && indexArg <= 7){
+                } else if (indexArg >= 6 && indexArg <= 7) {
                     omdbSearch(query);
-                } else if (indexArg >= 8 && indexArg <= 10){
+                } else if (indexArg >= 8 && indexArg <= 10) {
                     BITSearch(query);
                 }
             } else {
                 decide(arg);
-            } 
+            }
         }
     } else {
         decide(arg);
@@ -239,7 +273,7 @@ function inquirerFunc() {
         .prompt([
             {
                 type: "input",
-                message: "what can I help you with?",
+                message: "What can I help you with?",
                 name: "input"
             },
             {
