@@ -46,7 +46,7 @@ function whattype(arg) {
                 }
             }
             if (resp.confirm) {
-                if (keyword.indexOf(arg) !== -1) {
+                if (compare(keyword, arg)) {
                     inquirer
                         .prompt([
                             {
@@ -68,7 +68,7 @@ function whattype(arg) {
 
 function decide(arg) {
     var keyword = ["search", "look", "find"];
-    if(keyword.indexOf(arg) !== -1 && arg.length == 1){
+    if (compare(keyword, arg) === false) {
         whattype(arg);
     } else {
         for (let i = 0; i < arg.length; i++) {
@@ -77,31 +77,33 @@ function decide(arg) {
                     if (arg[i + 1] == "up" || arg[i + 1] == "for") {
                         input = arg.slice(i + 2).join("+");
                         whattype(input);
+                    } else if (compare(keyword, arg)){
+                        whattype(arg);
                     } else {
                         input = arg.slice(i + 1).join("+");
                         whattype(input);
                     }
-                } 
+                }
             }
         }
     }
 };
-function showtimes(arg){
+function showtimes(arg) {
     inquirer
-                    .prompt([
-                        {
-                            type: "confirm",
-                            message: "Would you like to look up showtimes?",
-                            default: true,
-                            name: "confirm"
-                        }
-                    ]).then(function (resp) {
-                        if (resp.confirm) {
-                            BITSearch(arg);
-                        } else {
-                            anythingElse();
-                        }
-                    })
+        .prompt([
+            {
+                type: "confirm",
+                message: "Would you like to look up showtimes?",
+                default: true,
+                name: "confirm"
+            }
+        ]).then(function (resp) {
+            if (resp.confirm) {
+                BITSearch(arg);
+            } else {
+                anythingElse();
+            }
+        })
 }
 
 function spotSearch(arg1, arg2) {
@@ -206,7 +208,6 @@ function BITSearch(arg) {
 function lookFor(arg) {
     var searchType = ["album", "artist", "song", "music", "band", "track", "movie", "actor", "concert", "tickets", "showtime", "quit", "q", "exit", "break", "n", "no", "nothing"];
     var lastWord = arg.slice(-1).toString();
-    console.log(compare(searchType, arg))
     if (compare(searchType, arg)) {
         let indexLast = searchType.indexOf(lastWord);
 
@@ -245,7 +246,6 @@ function lookFor(arg) {
             }
         }
     } else {
-        console.log(arg);
         decide(arg);
     }
 };
