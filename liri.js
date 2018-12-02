@@ -20,6 +20,33 @@ function breakdown(arg) {
         return searchArr;
     };
 }
+function whattype(arg){
+    inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "What should I search for?",
+                choices: ["Artist", "Track", "Playlist", "Album", "Movie"],
+                name: "choice"
+            },
+            {
+                type: "confirm",
+                message: "Are you sure?",
+                default: true,
+                name: "confirm"
+            }
+        ]).then(function(resp){
+            if(resp.confirm){
+                if(resp.choice == "movie"){
+                    omdbSearch(arg);
+                } else {
+                    spotSearch(resp.choice.toLowerCase(), arg)
+                }
+            } else {
+                whattype(arg);
+            }
+        })
+}
 
 function decide(arg) {
     var keyword = ["search", "look", "find"];
@@ -29,12 +56,10 @@ function decide(arg) {
             if (arg[i] == keyword[j]) {
                 if (arg[i + 1] == "up" || arg[i + 1] == "for") {
                     input = arg.slice(i + 2).join("+");
-                    console.log(input)
-                    return input;
+                    whattype(input);
                 } else {
                     input = arg.slice(i + 1).join("+");
-                    console.log(input)
-                    return input;
+                    whattype(input);
                 }
             }
         }
@@ -78,7 +103,7 @@ function spotSearch(arg1, arg2) {
                 }
             ]).then(function(resp){
                 if(resp.confirm){
-                    BITSearch(refArg);
+                    BITSearch(arg2);
                 } else {
                     anythingElse();
                 }
@@ -116,22 +141,37 @@ function omdbSearch (arg){
             } else {
                 console.log('error', error, response && response.statusCode);
             }
-    }).then(function(){
-        
+            anythingElse();
     })
 }
 
 function BITSearch  (arg){
     let query = "https://rest.bandsintown.com/artists/" + arg + "/events?app_id=codingbootcamp";
-    request
-        .get(query)
-        .on("response", function(response){
-            console.log(response);
-        })
+    request.get({url: query}, function (error, response, body){
+        var BITJson = JSON.parse(body);
+        for(var s = 0; s< BITJson.length; s++){
+            let data = BITJson[s];
+            if(data.venue.country == "United States"){
+                var logs = [
+                    "Country: " + data.venue.country,
+                    "Location: " + data.venue.city + ", " + data.venue.region,
+                    "Lineup: " + data.lineup.join(", "),
+                    "Date: " + moment(data.datetime).format("MM/DD/YYYY"),
+                    "---------------------------------------------",
+                    "---------------------------------------------"
+                ].join("\n")
+                console.log(logs);
+            }
+        }
+        anythingElse();
+
+    })
+        
+ 
 }
 
 function lookFor(arg) {
-    var searchType = ["album", "artist", "playlist", "music", "band", "track", "movie", "actor", "concert", "tickets", "showtime", "quit", "q", "exit", "break", "n", "no", "nothing"];
+    var searchType = ["album", "artist", "song", "music", "band", "track", "movie", "actor", "concert", "tickets", "showtime", "quit", "q", "exit", "break", "n", "no", "nothing"];
     var lastWord = arg.slice(-1).toString();
     if (compare(searchType, arg)) {
         let indexLast = searchType.indexOf(lastWord);
@@ -155,6 +195,8 @@ function lookFor(arg) {
                                 spotSearch(searchThis(lastWord), input)
                             } else if (indexLast >= 6 && indexLast <= 7){
                                 omdbSearch(input);
+                            } else if (indexArg >= 8 && indexArg <= 10){
+                                BITSearch(input);
                             }
                             return input;
                         })
@@ -163,10 +205,14 @@ function lookFor(arg) {
                     spotSearch(searchThis(arg[i]), query);
                 } else if (indexArg >= 6 && indexArg <= 7){
                     omdbSearch(query);
+                } else if (indexArg >= 8 && indexArg <= 10){
+                    BITSearch(query);
                 }
+            } else {
+                decide(arg);
             } 
         }
-    } else if (indexLast == -1) {
+    } else {
         decide(arg);
     }
 };
@@ -179,20 +225,13 @@ function searchThis(arg) {
         case "music":
             type = "track";
             return type;
+        case "song":
+            type = "track";
+            return type;
         default:
             type = arg;
             return type;
     }
-    // if (arg == "band") {
-    //     type = "artist";
-    //     return type;
-    // } else if (arg == "music") {
-    //     type = "track";
-    //     return type;
-    // } else {
-    //     type = arg;
-    //     return type;
-    // }
 };
 
 function inquirerFunc() {
