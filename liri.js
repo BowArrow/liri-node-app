@@ -6,7 +6,7 @@ moment().format();
 var Spotify = require("node-spotify-api");
 var keys = require("./keys")
 var spotify = new Spotify(keys.spotify)
-var keyword = ["search", "look", "find"];
+
 
 function breakdown(arg) {
     var searchArr;
@@ -22,6 +22,7 @@ function breakdown(arg) {
     };
 }
 function whattype(arg) {
+    var keyword = ["search", "look", "find"];
     inquirer
         .prompt([
             {
@@ -66,10 +67,10 @@ function whattype(arg) {
 }
 
 function decide(arg) {
-    
+    var keyword = ["search", "look", "find"];
     if(keyword.indexOf(arg) !== -1 && arg.length == 1){
         whattype(arg);
-    } else if (keyword.indexOf(arg) !== -1) {
+    } else {
         for (let i = 0; i < arg.length; i++) {
             for (let j = 0; j < keyword.length; j++) {
                 if (arg[i] == keyword[j]) {
@@ -83,8 +84,6 @@ function decide(arg) {
                 } 
             }
         }
-    } else {
-        whattype(arg.join(" "))
     }
 };
 function showtimes(arg){
@@ -207,6 +206,7 @@ function BITSearch(arg) {
 function lookFor(arg) {
     var searchType = ["album", "artist", "song", "music", "band", "track", "movie", "actor", "concert", "tickets", "showtime", "quit", "q", "exit", "break", "n", "no", "nothing"];
     var lastWord = arg.slice(-1).toString();
+    console.log(compare(searchType, arg))
     if (compare(searchType, arg)) {
         let indexLast = searchType.indexOf(lastWord);
 
@@ -242,11 +242,10 @@ function lookFor(arg) {
                 } else if (indexArg >= 8 && indexArg <= 10) {
                     BITSearch(query);
                 }
-            } else {
-                decide(arg);
             }
         }
     } else {
+        console.log(arg);
         decide(arg);
     }
 };
