@@ -46,6 +46,7 @@ function whattype(arg) {
                 }
             }
             if (resp.confirm) {
+                console.log(arg);
                 if (compare(keyword, arg)) {
                     inquirer
                         .prompt([
