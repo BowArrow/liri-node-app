@@ -46,7 +46,7 @@ function whattype(arg) {
                 }
             }
             if (resp.confirm) {
-                console.log(arg);
+                // console.log(arg);
                 if (compare(keyword, arg)) {
                     inquirer
                         .prompt([
@@ -78,7 +78,7 @@ function decide(arg) {
                     if (arg[i + 1] == "up" || arg[i + 1] == "for") {
                         input = arg.slice(i + 2).join("+");
                         whattype(input);
-                    } else if (compare(keyword, arg)){
+                    } else if (compare(keyword, arg) && arg.length == 1){
                         whattype(arg);
                     } else {
                         input = arg.slice(i + 1).join("+");
