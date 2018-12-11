@@ -1,7 +1,7 @@
 # liri-node-app
 Language Interpretation and Recognition Interface
 
-## Video demonsration
+## Video demonstration
 https://drive.google.com/file/d/1f8aaFnAUIPVjP4tzL_5epVMCgTLCyPqq/view?usp=sharing
 
 ## Commands
